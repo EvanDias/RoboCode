@@ -7,8 +7,8 @@ import java.util.*;
  public class MyFirstRobot extends Robot {
 	 
 	 public class globalVar {
-		 public static int a=0;
-		 public static double b=0;
+		 public static double energy=0;
+		 public static double pastBearing=361;
 	 }
 	 
 	 
@@ -17,23 +17,24 @@ import java.util.*;
     	 
     	 // Color of the robot (pink)
     	 setBodyColor(Color.PINK);
-    	 double z, x=0;
     	 
-    	 //while(globalVar.a == 0) { turnRadarLeft(20); }
     	 
-         while(true) {        
+    	 while(true) {        
         	 
-        	 this.turnRadarLeft(360);
+    		 
+    		 
+    		 this.turnRadarLeft(360);
+        	 
+    		 
+        	 
+        	         	 
         	 
         	        	       	 
-        	 //if(closeToWall() == true) {
-        	//	 antiWall();
-        	 //}
-        	
-        	 
-  
-        	 
-        	 
+//	    	 if(closeToWall() == true) {
+//	    		 antiWall();
+//	    	 }
+	    	
+
         	 
         	 
          }
@@ -41,17 +42,15 @@ import java.util.*;
 
      
      
-     
+
      
      
      public void onScannedRobot(ScannedRobotEvent e) {
-
-    	 //this.ahead(50);
-    	 
-    	 
+   
+    	    	 
     	 // Facing my robot heading 90º to the enemy
     	 double enemyBearing = e.getBearing();
-    	 
+    	    	 
     	 if(enemyBearing > 0) { // positive getBearing()
     		 if(enemyBearing > 90)
     			 this.turnRight(enemyBearing - 90); 
@@ -66,13 +65,58 @@ import java.util.*;
     	 }
     	 
 
+    	 // Block the radar on the enemy
+    	 this.turnRadarRight(this.getHeading() - this.getRadarHeading() + e.getBearing());
+    	 
+    	 // Block the gun on the enemy
+    	 this.turnGunRight(this.getHeading() - this.getGunHeading() + e.getBearing());
+    	 
+    	
+    	 
+    	 // Fire power formula
+    	 double bearing = e.getBearing();
+    	 double enemyVelocity = e.getVelocity();
+    	
+    	 
+    	 	if(enemyVelocity == 0) { // enemy is immobile
+    	 		fire(1);
+     		} else if(bearing != globalVar.pastBearing) { // enemy is moving
+     			
+	    		 if(bearing > globalVar.pastBearing) { // enemy robot moved to right
+	    			 this.turnGunRight(20);
+	    			 this.fire(2);
+	    		 } else if(bearing < globalVar.pastBearing) { // enemy robot moved to left
+	    			 this.turnGunLeft(20);
+	    			 this.fire(2); 	 
+    		 } 
+    	 } 
+    	 
+    	 //this.fire(Math.min(400 / e.getDistance(), 3));
+    	 
+    	 globalVar.pastBearing = bearing;
+    	 
+    	
+    	 // Dodge bot
+    	 double currentEnergy = e.getEnergy();
+    	 long random =  Math.round( Math.random() ); // 0 or 1
+    	 
+    	 if(currentEnergy < globalVar.energy) { // Enemy lost energy
+    		 if(random == 1) this.ahead(60);
+    		 else if(random == 0) this.ahead(-60);
+    	 }
+    
+    	 globalVar.energy = currentEnergy;
+
+    	 
+    
+
     	 
     	 
-    	 //System.out.println("Energy: " + enemyEnergy + "   MyEnergy: " + this.getEnergy());
     	 
      }
      
-     
+     public void onHitRobot(HitRobotEvent INI) {
+    	}
      
      
      
@@ -90,7 +134,7 @@ import java.util.*;
  	 * onHitWall: What to do when you hit a wall
  	 */
  	public void onHitWall(HitWallEvent e) {
- 		antiWall();
+ 		//antiWall();
  		
  	}	
  	
@@ -109,6 +153,26 @@ import java.util.*;
  	}
  	
  	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
+ 	
  	/************************************************************************
  	 *	Avoid the nearest wall (100 pixels distance)
  	 */
@@ -118,58 +182,22 @@ import java.util.*;
  		
  		// DOWN WALL
  		if(getY() <= 100)  { 
- 			if(getX() <= 150) {
- 				this.turnLeft(newAngle(45));
- 				this.ahead(40);
- 			} else if(getX() >= 650) {
- 				this.turnLeft(newAngle(315));
- 				this.ahead(40);
- 			} else {
- 				this.turnLeft(newAngle(0));
- 				this.ahead(40);
- 			}		
+ 			newAngle(0);		
  		}
  		
  		// TOP WALL
  		if(getY() >= getBattleFieldHeight() - 100)  { 
- 			if(getX() <= 150) {
- 				this.turnLeft(newAngle(135));
- 				this.ahead(40);
- 			} else if(getX() >= 650) {
- 				this.turnLeft(newAngle(225));
- 				this.ahead(40);
- 			} else {
- 				this.turnLeft(newAngle(180));
- 				this.ahead(40);
- 			}		
+ 			newAngle(180);
  		}
  		
  		// LEFT WALL
  		if(getX() <= 100) {
- 			if(getY() <= 200) {
- 				this.turnLeft(newAngle(45));
- 				this.ahead(40);
- 			} else if(getY() >= 600) {
- 				this.turnLeft(newAngle(135));
- 				this.ahead(40);
- 			} else {
- 				this.turnLeft(newAngle(90));
- 				this.ahead(40);
- 			}
+ 			newAngle(90);
  		}
  		
  		// RIGHT WALL
  		if(getX() >= (getBattleFieldWidth() - 100)) {
- 			if(getY() <= 200) {
- 				this.turnLeft(newAngle(315));
- 				this.ahead(40);
- 			} else if(getY() >= 600) {
- 				this.turnLeft(newAngle(225));
- 				this.ahead(40);
- 			} else {
- 				this.turnLeft(newAngle(270));
- 				this.ahead(40);
- 			}
+ 			newAngle(270);
  		}
 
  		
@@ -179,61 +207,37 @@ import java.util.*;
  	/************************************************************************
  	 *	Rotation of body/weapon/radar of the robot to the desire angle (LEFT ROTATION)
  	 */ 	
- 	public double newAngle(double newAngle) {
- 		double aux = getHeading() - newAngle;
+ 	public void newAngle(double newAngle) {
  		
- 		return aux;
+ 		double aux = this.getHeading() - newAngle;
+ 		
+ 		if(this.getHeading() >=0) {
+ 			aux = newAngle - this.getHeading();
+ 			this.turnRight(aux);
+ 		} else {
+ 			aux = newAngle - this.getHeading();
+ 			this.turnRight(aux);
+ 		}
  	}
  	
  	 
  	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	/*
- 	public double fixRadarInEnemy(double enemyAngle, double aux) {
- 		
- 		System.out.println("enemyAngle: " + enemyAngle + "  aux: " + aux);
 
-	 		
- 		
-	 		if(enemyAngle > aux) { 
-	 			if(enemyAngle < 0)
-	 				this.turnRadarRight(aux*(-1) - enemyAngle*(-1));
-	 			else
-	 				this.turnRadarRight(aux - enemyAngle);
-	 				
-	 		} else { 
-	 			if(enemyAngle < 0)
-	 				this.turnRadarLeft(enemyAngle*(-1) - aux*(-1));
-	 			else
-	 				this.turnRadarLeft(enemyAngle - aux);
-	 		}
-	 		
-	 		
- 		return enemyAngle;
- 	}
- 	*/
+
+
+
  	
  	
- 	/*
- 	public void changeGunAngle(double enemyAngle) {
- 		double aux, currentGun = getRadarHeading(); 
- 		
- 		if(180 <= currentGun && currentGun <= 360) {
- 			aux = (360 - currentGun) + getHeading() + enemyAngle;
- 			turnRadarRight(aux);
- 		} else {
- 			aux = (90 - currentGun) + getHeading() + enemyAngle; 
- 			turnRadarLeft(aux);
- 		}
- 	}	*/
+ 	
+ 	
+ 	
+ 
+ 	
+ 	
+ 	
+ 	
+ 	
+ 
  	
  	
 
