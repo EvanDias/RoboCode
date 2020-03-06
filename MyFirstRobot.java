@@ -1,253 +1,189 @@
 package man;
 import robocode.*;
-import java.awt.Color;
-import java.util.*;
+import java.awt.*;
+import robocode.*;
+import static robocode.util.Utils.normalRelativeAngleDegrees;
 
 
- public class MyFirstRobot extends Robot {
-	 
-	 public class globalVar {
-		 public static double energy=0;
-		 public static double pastBearing=361;
-	 }
-	 
-	 
-	 
-     public void run() {
-    	 
-    	 // Color of the robot (pink)
-    	 setBodyColor(Color.PINK);
-    	 
-    	 
-    	 while(true) {        
-        	 
-    		 
-    		 
-    		 this.turnRadarLeft(360);
-        	 
-    		 
-        	 
-        	         	 
-        	 
-        	        	       	 
-//	    	 if(closeToWall() == true) {
-//	    		 antiWall();
-//	    	 }
-	    	
 
-        	 
-        	 
-         }
-     }
+public class MyFirstRobot extends AdvancedRobot {
+	boolean movingForward;
+	double exactLocation;
+	
+	public void run() {
+		setBodyColor(Color.blue);
+		setGunColor(Color.orange);
+		setRadarColor(Color.red);
+		setScanColor(Color.red);
+		setBulletColor(Color.white);
+		setAdjustRadarForRobotTurn(true);
+		setAdjustGunForRobotTurn(true);
+		setAdjustRadarForGunTurn(true); 
+		
+		setTurnRadarRightRadians(Double.POSITIVE_INFINITY); 
+		
+				
+		while (true) {
+			
+			scan();
+			setAhead(100);
+			
+			setTurnRight(200);
+			
+			// call antiWall() to avoid the wall
+			if(closeToWall() == true) antiWall();
+			
+		}
+	}
+	
+	public void onScannedRobot(ScannedRobotEvent e) {
+		// Calcula a localização exata do robot
+		double absoluteBearing = getHeading() + e.getBearing();
+		double bearingFromGun = normalRelativeAngleDegrees(absoluteBearing - getGunHeading());
 
-     
-     
+		// If it's close enough, fire!
+		if (Math.abs(bearingFromGun) <= 3) {
+			turnGunRight(bearingFromGun);
+			// We check gun heat here, because calling fire()
+			// uses a turn, which could cause us to lose track
+			// of the other robot.
+			if (getGunHeat() == 0) {
+				fire(Math.min(3 - Math.abs(bearingFromGun), getEnergy() - .1));
+			}
+		} // otherwise just set the gun to turn.
+		// Note:  This will have no effect until we call scan()
+		else {
+			turnGunRight(bearingFromGun);
+		}
+		// Generates another scan event if we see a robot.
+		// We only need to call this if the gun (and therefore radar)
+		// are not turning.  Otherwise, scan is called automatically.
+		if (bearingFromGun == 0) {
+			scan();
+		}
+	}
 
-     
-     
-     public void onScannedRobot(ScannedRobotEvent e) {
-   
-    	    	 
-    	 // Facing my robot heading 90º to the enemy
-    	 double enemyBearing = e.getBearing();
-    	    	 
-    	 if(enemyBearing > 0) { // positive getBearing()
-    		 if(enemyBearing > 90)
-    			 this.turnRight(enemyBearing - 90); 
-    		 else if(enemyBearing < 90) 
-    			 this.turnLeft(90 - enemyBearing);
-    		 
-    	 } else { // negative getBearing
-    		if(enemyBearing < -90)
-    			this.turnLeft(enemyBearing + 90); 
-    		else if(enemyBearing > -90) 
-    			this.turnRight(-90 - enemyBearing);
-    	 }
-    	 
+	public void onHitByBullet(HitByBulletEvent e) {
+		//turnRight(20);
+	   // ahead(100);
 
-    	 // Block the radar on the enemy
-    	 this.turnRadarRight(this.getHeading() - this.getRadarHeading() + e.getBearing());
-    	 
-    	 // Block the gun on the enemy
-    	 this.turnGunRight(this.getHeading() - this.getGunHeading() + e.getBearing());
-    	 
-    	
-    	 
-    	 // Fire power formula
-    	 double bearing = e.getBearing();
-    	 double enemyVelocity = e.getVelocity();
-    	
-    	 
-    	 	if(enemyVelocity == 0) { // enemy is immobile
-    	 		fire(1);
-     		} else if(bearing != globalVar.pastBearing) { // enemy is moving
-     			
-	    		 if(bearing > globalVar.pastBearing) { // enemy robot moved to right
-	    			 this.turnGunRight(20);
-	    			 this.fire(2);
-	    		 } else if(bearing < globalVar.pastBearing) { // enemy robot moved to left
-	    			 this.turnGunLeft(20);
-	    			 this.fire(2); 	 
-    		 } 
-    	 } 
-    	 
-    	 //this.fire(Math.min(400 / e.getDistance(), 3));
-    	 
-    	 globalVar.pastBearing = bearing;
-    	 
-    	
-    	 // Dodge bot
-    	 double currentEnergy = e.getEnergy();
-    	 long random =  Math.round( Math.random() ); // 0 or 1
-    	 
-    	 if(currentEnergy < globalVar.energy) { // Enemy lost energy
-    		 if(random == 1) this.ahead(60);
-    		 else if(random == 0) this.ahead(-60);
-    	 }
-    
-    	 globalVar.energy = currentEnergy;
+	}
+	
 
-    	 
-    
-
-    	 
-    	 
-    	 
-     }
-     
-     public void onHitRobot(HitRobotEvent INI) {
-    	}
-     
-     
-     
+	
+	public void reverseDirection() {
+		if (movingForward) {
+			turnRight(20);
+			back(200);
+			movingForward = false;
+		} else {
+			turnRight(25);
+			ahead(200);
+			movingForward = true;
+		}
+	}
+	
+	public void onHitWall(HitWallEvent e) {
+		//reverseDirection();
+	}
+	
+	public void onBulletHitBullet(BulletHitBulletEvent e) {
+		reverseDirection();
+	}
+	
+	public void onHitRobot(HitRobotEvent e) {
+			if(e.getBearing() >= -180 && e.getBearing() <= 0) {
+				exactLocation = e.getBearing() + (getHeading() - getGunHeading());
+				setTurnGunRight(normalRelativeAngleDegrees(-exactLocation));
+				setBack(100);
+				setFire(3);
+			}
+			else if(e.getBearing() > 0 && e.getBearing() <= 180){
+				exactLocation = e.getBearing() + (getHeading() - getGunHeading());
+				setTurnGunRight(normalRelativeAngleDegrees(exactLocation));
+				setBack(100);
+				setFire(3);
+			}
+			
+	}
+	
+	
+	
+	
+	
+	
  	/************************************************************************
- 	 * onHitByBullet: What to do when you're hit by a bullet
- 	 */
- 	public void onHitByBullet(HitByBulletEvent e) {
- 		// Replace the next line with any behavior you would like
- 		//back(10);
- 	}
- 	
- 	
- 	
- 	/************************************************************************
- 	 * onHitWall: What to do when you hit a wall
- 	 */
- 	public void onHitWall(HitWallEvent e) {
- 		//antiWall();
- 		
- 	}	
- 	
- 	
- 	
- 	
- 	
- 	/************************************************************************
- 	 *	Returns true/false if the robot is close (or not) to the wall
- 	 */
+ 	*	Returns true/false if the robot is close (or not) to the wall 
+ 	*	Distance of 80 pixels
+ 	*/
  	public boolean closeToWall() {
- 		if(getX() <= 100 || getX() >= (getBattleFieldWidth() - 100) || getY() <= 100 || getY() >= (getBattleFieldHeight() - 100))
+ 		double height = this.getBattleFieldHeight();
+		double width = this.getBattleFieldWidth();
+ 		if(this.getX() <= 80 || this.getX() >= (width - 80) || this.getY() <= 80 || this.getY() >= (height - 80))
  			return true;
  		else
  			return false;
  	}
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
+	
+	
  	/************************************************************************
- 	 *	Avoid the nearest wall (100 pixels distance)
- 	 */
- 	
- 	public void antiWall() {
- 		
- 		
- 		// DOWN WALL
- 		if(getY() <= 100)  { 
- 			newAngle(0);		
- 		}
- 		
- 		// TOP WALL
- 		if(getY() >= getBattleFieldHeight() - 100)  { 
- 			newAngle(180);
- 		}
- 		
- 		// LEFT WALL
- 		if(getX() <= 100) {
- 			newAngle(90);
- 		}
- 		
- 		// RIGHT WALL
- 		if(getX() >= (getBattleFieldWidth() - 100)) {
- 			newAngle(270);
- 		}
+ 	*	É calculado o centro do BattleField
+ 	*	Vetor formado entre o centro e o robot para descobrir qual o angulo (relativamente ao eixo dos x)
+ 	*	Fazendo uns simples calculos consegue-se apontar a HEAD para o centro afastando se assim da parede
+ 	*/	
+	public void antiWall() {
+		stop();
+		// Battlefield size
+		double height = this.getBattleFieldHeight();
+		double width = this.getBattleFieldWidth();
+		
+		// Central point of the battlefield
+		double center_x = (height / 2), center_y = (width / 2);
+		
+		// Vector 
+		double vetor_x = (center_x - this.getX());
+		double vetor_y = (center_y - this.getY());
+		
+		// Angulo formado relativamente ao eixo dos x
+		double theta = (180.0 / Math.PI * Math.atan2(vetor_y, vetor_x));
+		
+		theta *= (-1);
+			
+		if(this.getHeading() > theta) { // Se o angulo da head foi maior que o angulo relativo ao centro
+			this.turnLeft(this.getHeading() - (theta + 90));
+		} else {
+			if(this.getHeading() < 90 && this.getHeading() >= 0) 
+				this.turnRight((90 - this.getHeading()) + theta);
+			else
+				this.turnRight(theta - this.getHeading());
+			}
 
- 		
- 		
- 	}
- 
- 	/************************************************************************
- 	 *	Rotation of body/weapon/radar of the robot to the desire angle (LEFT ROTATION)
- 	 */ 	
- 	public void newAngle(double newAngle) {
- 		
- 		double aux = this.getHeading() - newAngle;
- 		
- 		if(this.getHeading() >=0) {
- 			aux = newAngle - this.getHeading();
- 			this.turnRight(aux);
- 		} else {
- 			aux = newAngle - this.getHeading();
- 			this.turnRight(aux);
- 		}
- 	}
- 	
- 	 
- 	
-
-
-
-
- 	
- 	
- 	
- 	
- 	
- 
- 	
- 	
- 	
- 	
- 	
- 
- 	
- 	
-
- 	}
- 	
- 	
-     
- 
- 
-
- 
- 
- 
+		this.ahead(81);
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+}
